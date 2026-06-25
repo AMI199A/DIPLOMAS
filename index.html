@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Diplomas INGECOP — Tamaño Carta</title>
+    <meta name="description" content="Generador de diplomas INGECOP en tamaño carta con plantillas predeterminadas, edición de texto y exportación a PDF.">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- jsPDF + html2canvas para generación masiva robusta -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --carta-w: 1056px;
+            --carta-h: 816px;
+            --ui-max: 1100px;
+            --accent: #1b4332;
+            --accent2: #2d6a4f;
+            --gold: #c9a84c;
+            --bg: #0d1117;
+            --panel: #161b22;
+            --surface: #21262d;
+            --border: rgba(255,255,255,0.08);
+            --text: #e6edf3;
+            --muted: #8b949e;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 20px 60px; display: flex; flex-direction: column; align-items: center; }
+
+        /* HEADER */
+        .app-header { width: 100%; max-width: var(--ui-max); display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .app-header h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; background: linear-gradient(135deg, #c9a84c, #f0d080); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .app-header .badge { font-size: 0.7rem; background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4); color: #c9a84c; padding: 3px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 0.06em; }
+
+        /* PANEL PRINCIPAL */
+        .main-panel { width: 100%; max-width: var(--ui-max); background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+        .panel-section { display: flex; flex-direction: column; gap: 8px; }
+        .panel-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+        .panel-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .divider { width: 1px; background: var(--border); align-self: stretch; }
+
+        /* BOTONES */
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 0.83rem; font-family: 'Inter', sans-serif; transition: all 0.2s; white-space: nowrap; }
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.12); }
+        .btn-primary { background: linear-gradient(135deg, #1b4332, #2d6a4f); color: #f0d080; box-shadow: 0 4px 14px rgba(27,67,50,0.5); }
+        .btn-success { background: linear-gradient(135deg, #059669, #10b981); color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+        .btn-neutral { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: linear-gradient(135deg, #991b1b, #ef4444); color: white; }
+        .file-label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.18); border-radius: 7px; cursor: pointer; font-size: 0.83rem; font-weight: 600; color: var(--text); transition: 0.2s; }
+        .file-label:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+        input[type="file"] { display: none; }
+        textarea { width: 100%; min-height: 75px; padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.83rem; resize: vertical; outline: none; transition: border-color 0.2s; }
+        textarea:focus { border-color: var(--gold); }
+        textarea::placeholder { color: var(--muted); }
+
+        /* TOOLBAR */
+        .toolbar { width: 100%; max-width: var(--ui-max); background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 11px 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; opacity: 0.4; pointer-events: none; transition: all 0.3s; }
+        .toolbar.active { opacity: 1; pointer-events: all; border-color: rgba(201,168,76,0.4); box-shadow: 0 0 0 2px rgba(201,168,76,0.12); }
+        .toolbar label { font-size: 0.76rem; color: var(--muted); font-weight: 600; }
+        .toolbar select, .toolbar input[type="number"] { padding: 5px 9px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.83rem; outline: none; }
+        .toolbar input[type="number"] { width: 58px; }
+        .toolbar input[type="color"] { width: 36px; height: 32px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: none; cursor: pointer; }
+        .toolbar .toolbar-hint { margin-left: auto; font-size: 0.73rem; color: var(--muted); }
+
+        /* GALERIA DE PLANTILLAS */
+        .designs-panel { width: 100%; max-width: var(--ui-max); background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 18px; }
+        .designs-panel h2 { font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700; color: var(--gold); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .designs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; }
+
+        .design-card { cursor: pointer; border-radius: 10px; overflow: hidden; border: 2px solid transparent; transition: all 0.22s ease; background: var(--surface); }
+        .design-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(201,168,76,0.25); }
+        .design-card.active-design { border-color: #f0d080; box-shadow: 0 0 0 3px rgba(240,208,128,0.2); }
+
+        .design-preview { width: 100%; aspect-ratio: 11/8.5; position: relative; overflow: hidden; background: #f5f5f5; }
+        /* object-fit:fill para que la miniatura muestre la plantilla completa sin recortes */
+        .design-preview img { width: 100%; height: 100%; object-fit: fill; display: block; transition: transform 0.3s; }
+        .design-card:hover .design-preview img { transform: scale(1.04); }
+        .design-active-badge { display: none; position: absolute; top: 6px; left: 6px; background: #f0d080; color: #1b4332; font-size: 0.6rem; padding: 2px 8px; border-radius: 20px; font-weight: 800; letter-spacing: 0.05em; }
+        .design-card.active-design .design-active-badge { display: block; }
+
+        .design-name { font-size: 0.78rem; font-weight: 600; text-align: center; padding: 8px 6px; color: var(--text); border-top: 1px solid var(--border); }
+
+        /* DIPLOMA — escala automática para que quepa en pantalla */
+        .certificate-outer {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            overflow: hidden;    /* evita scroll horizontal */
+        }
+        /* El wrapper SIEMPRE tiene dimensiones reales de Carta Horizontal */
+        .certificate-wrapper {
+            position: relative;
+            width: var(--carta-w);   /* 1056 px = 11 in @ 96dpi */
+            height: var(--carta-h);  /* 816 px  = 8.5 in @ 96dpi */
+            background: white;
+            box-shadow: 0 16px 60px rgba(0,0,0,0.7);
+            overflow: hidden;
+            flex-shrink: 0;
+            /* transform-origin esquina superior para que el escalado sea predecible */
+            transform-origin: top center;
+        }
+        /* Imagen de fondo: fill = ocupa EXACTAMENTE el lienzo carta, sin recortes ni franjas */
+        #bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 1; }
+        .text-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+        .draggable-box { position: absolute; cursor: move; border: 2px dashed transparent; padding: 5px; width: 80%; left: 10%; text-align: center; }
+        .draggable-box.selected { border: 2px dashed #c9a84c; background: rgba(201,168,76,0.06); z-index: 10; }
+        .editable-text { outline: none; cursor: text; width: 100%; font-family: 'Georgia', serif; line-height: 1.3; }
+
+        @media print {
+            @page { size: letter landscape; margin: 0; }
+            body { background: white; margin: 0; padding: 0; }
+            .app-header, .main-panel, .toolbar, .designs-panel, #prog-box { display: none !important; }
+            .draggable-box { border: none !important; background: transparent !important; }
+
+            /* IMPRESION INDIVIDUAL (modo normal) */
+            body:not(.printing-all) .certificate-outer { display: flex !important; justify-content: flex-start; }
+            body:not(.printing-all) .certificate-wrapper { box-shadow: none !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; transform: none !important; }
+
+            /* IMPRESION MASIVA (modo imprimir-todos) */
+            body.printing-all .certificate-outer { display: none !important; }
+            body.printing-all #print-all-container { position: static !important; left: auto !important; display: block !important; }
+            .print-page { width: 100vw !important; height: 100vh !important; overflow: hidden; page-break-after: always; }
+            .print-page .certificate-wrapper { width: 100vw !important; height: 100vh !important; box-shadow: none !important; transform: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="app-header">
+    <h1>&#127891; Generador de Diplomas INGECOP</h1>
+    <span class="badge">CARTA HORIZONTAL &middot; PDF</span>
+</header>
+
+<div class="main-panel">
+    <div class="panel-section">
+        <span class="panel-label">&#128193; Imagen personalizada</span>
+        <div class="panel-row">
+            <label class="file-label" for="imageLoader">&#128444;&#65039; Cargar imagen propia</label>
+            <input type="file" id="imageLoader" accept="image/*">
+        </div>
+    </div>
+    <div class="divider"></div>
+    <div class="panel-section">
+        <span class="panel-label">&#9889; Acciones</span>
+        <div class="panel-row">
+            <button class="btn btn-neutral" onclick="imprimir()">&#128424;&#65039; Imprimir</button>
+            <button class="btn btn-primary" onclick="guardarPDFIndividual()">&#128196; Guardar PDF</button>
+            <button class="btn btn-neutral" onclick="agregarCajaTexto()">&#10133; Agregar texto</button>
+        </div>
+    </div>
+    <div class="divider"></div>
+    <div class="panel-section" style="flex:1;min-width:260px;">
+        <span class="panel-label">&#128209; Generaci&oacute;n masiva &mdash; un diploma por nombre (reemplaza "NOMBRE DEL PARTICIPANTE")</span>
+        <textarea id="lista-nombres" placeholder="Juan P&eacute;rez&#10;Mar&iacute;a G&oacute;mez&#10;Carlos L&oacute;pez"></textarea>
+        <div class="panel-row">
+            <button class="btn btn-success" onclick="generarPDFMasivo()">&#128209; Generar PDF masivo</button>
+            <button class="btn btn-neutral" onclick="imprimirTodo()">&#128424;&#65039; Imprimir todos</button>
+        </div>
+    </div>
+</div>
+
+<!-- BARRA DE PROGRESO (oculta por defecto) -->
+<div id="prog-box" style="display:none; width:100%; max-width:var(--ui-max); flex-direction:column; gap:8px; margin-bottom:14px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span id="prog-txt" style="font-size:0.82rem; color:#a5b4fc; font-weight:600;">Generando...</span>
+        <span style="font-size:0.75rem; color:var(--muted);">Por favor espera, no cierres la ventana</span>
+    </div>
+    <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:10px; overflow:hidden;">
+        <div id="prog-bar" style="height:100%; width:0%; background:linear-gradient(90deg,#059669,#10b981); border-radius:10px; transition:width 0.3s ease;"></div>
+    </div>
+</div>
+
+<div class="toolbar" id="toolbar">
+    <label>Fuente:</label>
+    <select id="font-family" onchange="updateStyle('fontFamily', this.value)">
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Cinzel', serif">Cinzel</option>
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'Times New Roman', Times, serif">Times New Roman</option>
+        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+        <option value="Impact, sans-serif">Impact</option>
+    </select>
+    <label>Tama&ntilde;o:</label>
+    <input type="number" id="font-size" value="20" oninput="updateStyle('fontSize', this.value + 'px')">
+    <label>Color:</label>
+    <input type="color" id="font-color" value="#1a365d" oninput="updateStyle('color', this.value)">
+    <button class="btn btn-danger" style="padding:5px 12px;font-size:0.78rem;" onclick="eliminarCaja()">&#128465;&#65039; Eliminar caja</button>
+    <span class="toolbar-hint">&#9998;&#65039; Selecciona una caja de texto para editar</span>
+</div>
+
+<!-- GALERIA PLANTILLAS -->
+<div class="designs-panel">
+    <h2>&#127912; Plantillas Predeterminadas &mdash; Selecciona una para aplicarla</h2>
+    <div class="designs-grid">
+
+        <div class="design-card" id="card-1" onclick="aplicarPlantilla('plantilla_2.png','Dise&ntilde;o Verde Dorado', 'card-1')">
+            <div class="design-preview">
+                <img src="plantilla_2.png" alt="Dise&ntilde;o Verde Dorado">
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Verde Dorado</div>
+        </div>
+
+        <div class="design-card" id="card-2" onclick="aplicarPlantilla('plantilla_3.png','Dise&ntilde;o Azul Geom&eacute;trico', 'card-2')">
+            <div class="design-preview">
+                <img src="plantilla_3.png" alt="Dise&ntilde;o Azul Geom&eacute;trico">
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Azul Geom&eacute;trico</div>
+        </div>
+
+        <div class="design-card" id="card-3" onclick="aplicarPlantilla('plantilla_4.png','Dise&ntilde;o Verde Moderno', 'card-3')">
+            <div class="design-preview">
+                <img src="plantilla_4.png" alt="Dise&ntilde;o Verde Moderno">
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Verde Moderno</div>
+        </div>
+
+        <div class="design-card" id="card-4" onclick="aplicarPlantilla('plantilla_5.png','Dise&ntilde;o Verde Tri&aacute;ngulos', 'card-4')">
+            <div class="design-preview">
+                <img src="plantilla_5.png" alt="Dise&ntilde;o Verde Tri&aacute;ngulos">
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Verde Tri&aacute;ngulos</div>
+        </div>
+
+        <div class="design-card" id="card-5" onclick="aplicarPlantilla('plantilla_6.png','Dise&ntilde;o Elegante Azul Oro', 'card-5')">
+            <div class="design-preview">
+                <img src="plantilla_6.png" alt="Dise&ntilde;o Elegante Azul Oro">
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Elegante Azul &amp; Oro</div>
+        </div>
+
+        <div class="design-card" id="card-none" onclick="aplicarPlantilla('','Sin fondo', 'card-none')">
+            <div class="design-preview" style="background:#ffffff;display:flex;align-items:center;justify-content:center;">
+                <span style="color:#ccc;font-size:2rem;">&#9633;</span>
+                <span class="design-active-badge">&#10003; ACTIVO</span>
+            </div>
+            <div class="design-name">Sin fondo</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- DIPLOMA TAMAÑO CARTA -->
+<div class="certificate-outer">
+    <div class="certificate-wrapper" id="certificado-nodo">
+        <img id="bg-image" src="plantilla_6.png" alt="Plantilla diploma">
+        <div class="text-layer" id="text-layer">
+            <div class="draggable-box" style="top:18%;font-size:22px;color:#1a365d;">
+                <div class="editable-text" contenteditable="true" spellcheck="false">
+                    <strong>LA INSPECCI&Oacute;N GENERAL</strong><br>
+                    <strong>DE COOPERATIVAS -INGECOP-</strong><br>
+                    mediante la Sede Regional de Alta Verapaz<br>
+                    otorga el presente reconocimiento a:
+                </div>
+            </div>
+            <div class="draggable-box" style="top:44%;font-size:36px;color:#003366;font-weight:bold;" id="caja-nombre">
+                <div class="editable-text" contenteditable="true" spellcheck="false" id="nombre-receptor">NOMBRE DEL PARTICIPANTE</div>
+            </div>
+            <div class="draggable-box" style="top:55%;font-size:20px;color:#1a365d;">
+                <div class="editable-text" contenteditable="true" spellcheck="false">Por su valiosa colaboraci&oacute;n en la actividad denominada</div>
+            </div>
+            <div class="draggable-box" style="top:61%;font-size:36px;color:#2e7d32;font-family:'Times New Roman',Times,serif;font-weight:bold;font-style:italic;">
+                <div class="editable-text" contenteditable="true" spellcheck="false">"D&iacute;a internacional del Cooperativismo"</div>
+            </div>
+            <div class="draggable-box" style="top:73%;font-size:18px;color:#1a365d;">
+                <div class="editable-text" contenteditable="true" spellcheck="false">Dado en la ciudad de Cob&aacute;n Alta Verapaz a los 03 d&iacute;as<br>del mes de julio del a&ntilde;o 2026</div>
+            </div>
+            <div class="draggable-box" style="top:87%;font-size:16px;color:#1a365d;">
+                <div class="editable-text" contenteditable="true" spellcheck="false">Lic Sergio Enrique A. Sical Chun<br>Jefe de la Sede Regional de Alta Verapaz</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//  GALERIA: aplicar plantilla al diploma
+// ============================================================
+function aplicarPlantilla(src, nombre, cardId) {
+    const img = document.getElementById('bg-image');
+    // Quitar activo de todas las tarjetas
+    document.querySelectorAll('.design-card').forEach(c => c.classList.remove('active-design'));
+    // Activar tarjeta seleccionada
+    const card = document.getElementById(cardId);
+    if (card) card.classList.add('active-design');
+
+    if (src === '') {
+        img.src = '';
+        img.style.display = 'none';
+    } else {
+        img.src = src;
+        img.style.display = 'block';
+    }
+}
+
+// Marcar la plantilla por defecto como activa al cargar
+document.getElementById('card-5').classList.add('active-design');
+
+// ============================================================
+//  CARGA DE IMAGEN PERSONALIZADA
+// ============================================================
+document.getElementById('imageLoader').addEventListener('change', function(e) {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const img = document.getElementById('bg-image');
+        img.src = ev.target.result;
+        img.style.display = 'block';
+        document.querySelectorAll('.design-card').forEach(c => c.classList.remove('active-design'));
+    };
+    if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+});
+
+// ============================================================
+//  TOOLBAR Y SELECCION
+// ============================================================
+let activeBox = null;
+const toolbar = document.getElementById('toolbar');
+
+document.addEventListener('mousedown', function(e) {
+    const box = e.target.closest('.draggable-box');
+    document.querySelectorAll('.draggable-box').forEach(b => b.classList.remove('selected'));
+    if (box) {
+        activeBox = box;
+        box.classList.add('selected');
+        toolbar.classList.add('active');
+        const cs = window.getComputedStyle(box);
+        document.getElementById('font-family').value = cs.fontFamily.replace(/"/g,'');
+        document.getElementById('font-size').value = parseInt(cs.fontSize);
+        const rgb = cs.color.match(/\d+/g);
+        if (rgb) document.getElementById('font-color').value = '#' + ((1<<24)+(+rgb[0]<<16)+(+rgb[1]<<8)+ +rgb[2]).toString(16).slice(1);
+    } else if (!e.target.closest('.toolbar') && !e.target.closest('.designs-panel') && !e.target.closest('.main-panel')) {
+        activeBox = null;
+        toolbar.classList.remove('active');
+    }
+});
+
+function updateStyle(prop, val) {
+    if (activeBox) {
+        activeBox.style[prop] = val;
+        const ed = activeBox.querySelector('.editable-text');
+        if (ed) ed.style[prop] = val;
+    }
+}
+
+function eliminarCaja() {
+    if (activeBox) { activeBox.remove(); activeBox = null; toolbar.classList.remove('active'); }
+}
+
+function agregarCajaTexto() {
+    const layer = document.getElementById('text-layer');
+    const box = document.createElement('div');
+    box.className = 'draggable-box';
+    box.style.cssText = 'top:50%;left:10%;font-size:22px;color:#1a365d;';
+    const ed = document.createElement('div');
+    ed.className = 'editable-text';
+    ed.contentEditable = 'true';
+    ed.spellcheck = false;
+    ed.textContent = 'Nuevo texto aqui';
+    box.appendChild(ed);
+    layer.appendChild(box);
+    addDrag(box);
+}
+
+// ============================================================
+//  DRAG AND DROP
+// ============================================================
+let isDragging=false, startY, startX, initialTop, initialLeft;
+
+function addDrag(box) {
+    box.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        activeBox = box;
+        startY = e.clientY; startX = e.clientX;
+        initialTop = box.offsetTop; initialLeft = box.offsetLeft;
+    });
+}
+document.querySelectorAll('.draggable-box').forEach(addDrag);
+
+document.addEventListener('mousemove', function(e) {
+    if (isDragging && activeBox) {
+        const dy = e.clientY - startY, dx = e.clientX - startX;
+        const pr = activeBox.parentElement.getBoundingClientRect();
+        activeBox.style.top  = (((initialTop  + dy) / pr.height) * 100) + '%';
+        activeBox.style.left = (((initialLeft + dx) / pr.width)  * 100) + '%';
+    }
+});
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+// ============================================================
+//  IMPRESION Y PDF
+// ============================================================
+function limpiarUI() {
+    document.querySelectorAll('.draggable-box').forEach(b => b.classList.remove('selected'));
+    toolbar.classList.remove('active');
+    if (document.activeElement) document.activeElement.blur();
+}
+
+function imprimir() { limpiarUI(); window.print(); }
+
+const opt = {
+    margin: 0,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+};
+
+function guardarPDFIndividual() {
+    limpiarUI();
+    const el = document.getElementById('certificado-nodo');
+    const nombre = document.getElementById('nombre-receptor').innerText.trim();
+    html2pdf().set({...opt, filename:'Diploma_' + (nombre||'Individual') + '.pdf'}).from(el).save();
+}
+
+// ============================================================
+//  GENERACIÓN MASIVA — jsPDF + html2canvas (robusto)
+// ============================================================
+async function generarPDFMasivo() {
+    limpiarUI();
+
+    const nombresRaw = document.getElementById('lista-nombres').value;
+    const nombres = nombresRaw.split('\n').map(n => n.trim()).filter(n => n !== '');
+    if (!nombres.length) { alert('Ingresa al menos un nombre en la lista.'); return; }
+
+    const el  = document.getElementById('certificado-nodo');
+    const nd  = document.getElementById('nombre-receptor');
+    const btn = document.querySelector('[onclick="generarPDFMasivo()"]');
+    const orig = nd.innerHTML;
+    const prevTransform = el.style.transform;
+
+    // Mostrar progreso
+    const progBox = document.getElementById('prog-box');
+    const progBar = document.getElementById('prog-bar');
+    const progTxt = document.getElementById('prog-txt');
+    progBox.style.display = 'flex';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+
+    try {
+        // Quitar escala CSS para que html2canvas capture tamaño real
+        el.style.transform = 'scale(1)';
+        el.style.transformOrigin = 'top left';
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
+
+        for (let i = 0; i < nombres.length; i++) {
+            nd.innerText = nombres[i];
+            progTxt.textContent = `Generando ${i + 1} de ${nombres.length}: ${nombres[i]}`;
+            progBar.style.width = ((i / nombres.length) * 100) + '%';
+
+            // Esperar render del DOM
+            await new Promise(r => setTimeout(r, 350));
+
+            const canvas = await html2canvas(el, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.97);
+            if (i > 0) pdf.addPage('letter', 'landscape');
+            // Carta horizontal: 11 × 8.5 pulgadas
+            pdf.addImage(imgData, 'JPEG', 0, 0, 11, 8.5);
+        }
+
+        progBar.style.width = '100%';
+        progTxt.textContent = 'Guardando PDF...';
+        await new Promise(r => setTimeout(r, 200));
+
+        pdf.save('Diplomas_Masivos.pdf');
+
+        progTxt.textContent = `¡${nombres.length} diploma(s) generados exitosamente!`;
+        progBar.style.background = '#10b981';
+        await new Promise(r => setTimeout(r, 2000));
+
+    } catch (err) {
+        console.error('Error generación masiva:', err);
+        alert('Error al generar: ' + err.message);
+    } finally {
+        nd.innerHTML = orig;
+        el.style.transform = prevTransform;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        progBox.style.display = 'none';
+        progBar.style.width = '0%';
+        progBar.style.background = '#10b981';
+        scaleDiploma();
+    }
+}
+
+// ============================================================
+//  IMPRIMIR TODO (una página por nombre, sin PDF)
+// ============================================================
+async function imprimirTodo() {
+    limpiarUI();
+    const nombresRaw = document.getElementById('lista-nombres').value;
+    const nombres = nombresRaw.split('\n').map(n => n.trim()).filter(n => n !== '');
+    if (!nombres.length) { alert('Ingresa al menos un nombre en la lista.'); return; }
+
+    const nd   = document.getElementById('nombre-receptor');
+    const orig = nd.innerHTML;
+
+    // Inyectar estilos de impresión multipágina temporales
+    const styleTag = document.createElement('style');
+    styleTag.id = 'print-override';
+    styleTag.textContent = `
+        @media print {
+            .print-page { page-break-after: always; }
+        }
+    `;
+    document.head.appendChild(styleTag);
+
+    // Crear contenedor de impresión oculto con una copia del diploma por nombre
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-all-container';
+    printContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1056px;';
+
+    const baseHTML = document.getElementById('certificado-nodo').outerHTML;
+
+    nombres.forEach((nombre, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'print-page';
+        wrapper.style.cssText = 'width:1056px;height:816px;position:relative;overflow:hidden;';
+        wrapper.innerHTML = baseHTML;
+        wrapper.querySelector('#certificado-nodo').removeAttribute('id');
+        const nr = wrapper.querySelector('#nombre-receptor');
+        if (nr) { nr.innerText = nombre; nr.removeAttribute('id'); }
+        // Quitar estilos de escala
+        const dip = wrapper.querySelector('.certificate-wrapper');
+        if (dip) dip.style.transform = 'scale(1)';
+        printContainer.appendChild(wrapper);
+    });
+
+    document.body.appendChild(printContainer);
+
+    // Activar modo impresión masiva (el CSS @media print lo maneja)
+    document.body.classList.add('printing-all');
+
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.head.removeChild(styleTag);
+            document.body.classList.remove('printing-all');
+            nd.innerHTML = orig;
+        }, 1200);
+    }, 500);
+}
+
+// ============================================================
+//  ESCALA AUTOMÁTICA DEL DIPLOMA AL ANCHO DE PANTALLA
+//  Las dimensiones internas siempre son 1056×816 px (carta real)
+//  El PDF se genera sin escala, a tamaño carta completo.
+// ============================================================
+const CARTA_W = 1056;
+const CARTA_H = 816;
+
+function scaleDiploma() {
+    const outer = document.querySelector('.certificate-outer');
+    const wrapper = document.getElementById('certificado-nodo');
+    if (!outer || !wrapper) return;
+
+    // Ancho disponible con un poco de margen
+    const available = outer.clientWidth - 32;
+    const scale = Math.min(1, available / CARTA_W);
+
+    wrapper.style.transform = `scale(${scale})`;
+    // Ajustar la altura del outer para evitar espacio en blanco
+    outer.style.height = (CARTA_H * scale) + 'px';
+}
+
+// Escalar al cargar y al cambiar tamaño de ventana
+window.addEventListener('load', scaleDiploma);
+window.addEventListener('resize', scaleDiploma);
+</script>
+</body>
+</html>
+
