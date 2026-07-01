@@ -414,37 +414,39 @@
             background: rgba(201, 168, 76, 0.12);
         }
 
-        /* DIPLOMA — escala automática para que quepa en pantalla */
+        /* DIPLOMA — previzualizacion 1:1 como se verá en papel */
         .certificate-outer {
             display: flex;
             justify-content: center;
-            width: 100%;
-            overflow: hidden;
-            /* evita scroll horizontal */
+            align-items: center;
+            width: 1056px;
+            height: 816px;
+            background: white;
+            /* Simula la hoja de papel física */
+            box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
+            flex-shrink: 0;
+            transform-origin: center center;
         }
 
-        /* El wrapper se adapta al alto natural de la imagen (sin distorsión) */
         .certificate-wrapper {
             position: relative;
-            width: var(--carta-w);
-            /* El alto lo define la imagen — no se fuerza ninguna proporción */
+            width: 1056px;
+            height: 816px;
             background: white;
-            box-shadow: 0 16px 60px rgba(0, 0, 0, 0.7);
             overflow: hidden;
-            flex-shrink: 0;
-            transform-origin: top center;
+            /* Llena la hoja al 100% */
+            transform: scale(1);
+            transform-origin: center center;
         }
 
-        /*
-         * La imagen ocupa el 100% del ancho y define su propio alto.
-         * Resultado: sin distorsión, sin recorte, sin barras blancas.
-         * El wrapper se adapta exactamente a las proporciones originales.
-         */
         #bg-image {
-            position: relative;
-            width: 100%;
-            height: auto;
-            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1056px;
+            height: 816px;
+            object-fit: contain;
+            display: none;
             z-index: 1;
         }
 
@@ -483,18 +485,20 @@
 
         @media print {
             @page {
-                size: 11in 8.5in landscape;
+                size: letter landscape;
                 margin: 0;
             }
 
-            /* Limpiar todo lo que no es el diploma */
             html,
             body {
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
                 background: white !important;
-                width: 100% !important;
-                height: 100% !important;
             }
 
             .app-header,
@@ -505,88 +509,58 @@
                 display: none !important;
             }
 
-            .draggable-box {
+            .draggable-box,
+            .draggable-box.selected {
                 border: none !important;
                 background: transparent !important;
             }
 
-            /* IMPRESION INDIVIDUAL: el outer desaparece como contenedor */
-            body:not(.printing-all) .certificate-outer {
+            .certificate-outer {
                 display: block !important;
-                width: 100% !important;
-                height: 100% !important;
-                overflow: visible !important;
-            }
-
-            /* El wrapper ocupa exactamente la hoja carta horizontal completa */
-            body:not(.printing-all) .certificate-wrapper {
-                position: fixed !important;
+                position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
                 width: 100vw !important;
                 height: 100vh !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                box-shadow: none !important;
-                transform: none !important;
                 overflow: hidden !important;
-            }
-
-            /* La imagen se muestra en su proporción natural, centrada en la hoja */
-            body:not(.printing-all) #bg-image {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                object-fit: contain !important;
-                object-position: center center !important;
-            }
-
-            /* El text-layer también cubre toda la hoja */
-            body:not(.printing-all) .text-layer {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-            }
-
-            /* IMPRESION MASIVA (modo imprimir-todos) */
-            body.printing-all .certificate-outer {
-                display: none !important;
-            }
-
-            body.printing-all #print-all-container {
-                position: static !important;
-                left: auto !important;
-                display: block !important;
-            }
-
-            .print-page {
-                width: 100vw !important;
-                height: 100vh !important;
-                overflow: hidden;
-                page-break-after: always;
-            }
-
-            .print-page .certificate-wrapper {
-                position: relative !important;
-                width: 100% !important;
-                height: 100% !important;
                 box-shadow: none !important;
                 transform: none !important;
             }
 
-            .print-page #bg-image,
-            .print-page .certificate-wrapper>img {
+            .certificate-wrapper {
+                position: absolute !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: 1056px !important;
+                height: 816px !important;
+                /* scale(1) para que ocupe el 100% de la hoja de papel */
+                transform: translate(-50%, -50%) scale(1) !important;
+                transform-origin: center center !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            #bg-image {
                 position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                object-fit: fill !important;
+                width: 1056px !important;
+                height: 816px !important;
+                object-fit: contain !important;
             }
+
+            .text-layer {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 1056px !important;
+                height: 816px !important;
+            }
+        }
         }
     </style>
 </head>
@@ -625,6 +599,10 @@
                 <button class="btn btn-success" onclick="generarPDFMasivo()">&#128209; Generar PDF masivo</button>
                 <button class="btn btn-neutral" onclick="imprimirTodo()">&#128424;&#65039; Imprimir todos</button>
             </div>
+            <span style="font-size:0.75rem; color:#fde047; margin-top:8px; display:block;">
+                💡 <b>Para imprimir sin bordes ni URL:</b> En la ventana de impresión, abre "Más ajustes" y pon
+                <b>Márgenes</b> en <b>"Ninguno"</b>.
+            </span>
         </div>
     </div>
 
@@ -832,11 +810,32 @@
         // ============================================================
         //  GALERIA: aplicar plantilla al diploma
         // ============================================================
-        function aplicarPlantilla(src, nombre, cardId) {
+
+        /*
+         * Convierte una URL de imagen (incluyendo file://) a data URL base64
+         * usando fetch + FileReader. Esto evita el error "Tainted canvas"
+         * al usar html2canvas, ya que los data URLs no tienen restricciones CORS.
+         */
+        async function srcToDataURL(src) {
+            if (!src || src.startsWith('data:') || src.startsWith('blob:')) return src;
+            try {
+                const resp = await fetch(src);
+                const blob = await resp.blob();
+                return await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = () => resolve(src); // fallback
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn('srcToDataURL fallback:', e);
+                return src;
+            }
+        }
+
+        async function aplicarPlantilla(src, nombre, cardId) {
             const img = document.getElementById('bg-image');
-            // Quitar activo de todas las tarjetas
             document.querySelectorAll('.design-card').forEach(c => c.classList.remove('active-design'));
-            // Activar tarjeta seleccionada
             const card = document.getElementById(cardId);
             if (card) card.classList.add('active-design');
 
@@ -845,8 +844,10 @@
                 img.style.display = 'none';
                 scaleDiploma();
             } else {
+                // Convertir a data URL para evitar problemas de CORS con html2canvas
+                const dataUrl = await srcToDataURL(src);
                 img.onload = () => scaleDiploma();
-                img.src = src;
+                img.src = dataUrl;
                 img.style.display = 'block';
             }
         }
@@ -911,6 +912,16 @@
 
         // Marcar la plantilla por defecto como activa al cargar
         document.getElementById('card-5').classList.add('active-design');
+
+        // Convertir la imagen inicial (plantilla_6.png) a data URL al cargar,
+        // para que html2canvas pueda capturarla sin error de "tainted canvas"
+        (async function initDefaultImage() {
+            const bgImg = document.getElementById('bg-image');
+            if (bgImg.src && !bgImg.src.startsWith('data:')) {
+                const dataUrl = await srcToDataURL(bgImg.src);
+                if (dataUrl !== bgImg.src) bgImg.src = dataUrl;
+            }
+        })();
 
         // ============================================================
         //  CARGA DE IMAGEN PERSONALIZADA
@@ -1002,81 +1013,107 @@
         });
         document.addEventListener('mouseup', () => { isDragging = false; });
 
-        // ============================================================
-        //  IMPRESION Y PDF
-        // ============================================================
-        function limpiarUI() {
-            document.querySelectorAll('.draggable-box').forEach(b => b.classList.remove('selected'));
-            toolbar.classList.remove('active');
-            if (document.activeElement) document.activeElement.blur();
+        // =================================================================
+        //  HELPER: captura diploma como imagen base64 (html2canvas)
+        // =================================================================
+        async function capturarDiploma(escala) {
+            const el = document.getElementById('certificado-nodo');
+            const prevT = el.style.transform;
+            const prevO = el.style.transformOrigin;
+            el.style.transform = 'scale(1)';
+            el.style.transformOrigin = 'top left';
+            await new Promise(r => setTimeout(r, 200));
+            const canvas = await html2canvas(el, {
+                scale: escala || 2,
+                useCORS: false,     // no se necesita CORS: las imagenes son data URLs
+                allowTaint: false,  // false: garantiza que toDataURL() funcione
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            el.style.transform = prevT;
+            el.style.transformOrigin = prevO;
+            scaleDiploma();
+            return canvas;
         }
 
+        // =================================================================
+        //  HELPER: abre ventana de impresion con una imagen base64
+        // =================================================================
+        function abrirVentanaImpresion(dataUrl) {
+            /*
+             * SANGRADO AGRESIVO: la imagen se posiciona con -8mm en cada
+             * borde y width/height de la hoja + 16mm extra.
+             * Así cubre completamente el área donde Chrome imprimiría
+             * la URL o el número de página, incluso con encabezados
+             * activados en el diálogo. El body tiene overflow:hidden
+             * para que el sangrado no genere scroll ni página extra.
+             */
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+@page{size:279.4mm 215.9mm;margin:0}
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow:hidden}
+body{margin:0;padding:0;width:279.4mm;height:215.9mm;overflow:hidden;background:white}
+img{
+  position:fixed;
+  top:-8mm;left:-8mm;
+  width:calc(279.4mm + 16mm);
+  height:calc(215.9mm + 16mm);
+  display:block;
+}
+</style></head><body>
+<img src="${dataUrl}">
+<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},800)},300)}<\/script>
+</body></html>`;
+            const pw = window.open('', '_blank', 'width=1200,height=900');
+            if (!pw) { alert('Permite ventanas emergentes para este sitio.'); return; }
+            pw.document.open();
+            pw.document.write(html);
+            pw.document.close();
+        }
+
+        // =================================================================
+        //  IMPRIMIR (diploma actual)
+        // =================================================================
         function imprimir() {
             limpiarUI();
-            const img = document.getElementById('bg-image');
 
-            // Calcular el ratio real de la imagen para adaptar el tamaño de página
-            function doPrint() {
-                // Dimensiones máximas: carta horizontal = 11 × 8.5 pulgadas
-                const MAX_W = 11, MAX_H = 8.5;
-                let pw = MAX_W, ph = MAX_H;
+            // Advertencia educativa para que el usuario sepa cómo configurar Chrome
+            // ya que al ser un archivo local (file://), no podemos ocultarlo a la fuerza.
+            alert('💡 IMPORTANTE PARA IMPRESIÓN PERFECTA:\n\nPara quitar el texto file:/// y que ocupe toda la hoja:\n1. En la ventana que se abrirá, ve a "Más ajustes".\n2. En "Márgenes", selecciona "Ninguno".\n3. En "Escala", selecciona "Predeterminado".\n4. DESMARCA "Encabezados y pies de página" si aparece.');
 
-                if (img.naturalWidth && img.naturalHeight) {
-                    const r = img.naturalWidth / img.naturalHeight;
-                    if (r >= MAX_W / MAX_H) {
-                        // Imagen más ancha: ajustar al ancho máximo
-                        pw = MAX_W;
-                        ph = parseFloat((MAX_W / r).toFixed(6));
-                    } else {
-                        // Imagen más alta: ajustar al alto máximo
-                        ph = MAX_H;
-                        pw = parseFloat((MAX_H * r).toFixed(6));
-                    }
-                }
-
-                // Inyectar tamaño de página exacto al ratio de la imagen
-                const ps = document.createElement('style');
-                ps.id = '_dip_page_sz';
-                ps.textContent = `@page { size: ${pw}in ${ph}in; margin: 0; }`;
-                document.head.appendChild(ps);
-
-                setTimeout(() => {
-                    window.print();
-                    setTimeout(() => {
-                        const el = document.getElementById('_dip_page_sz');
-                        if (el) el.remove();
-                    }, 600);
-                }, 80);
-            }
-
-            // Si la imagen ya está cargada, imprimir de inmediato
-            if (img.complete && img.naturalWidth) {
-                doPrint();
-            } else {
-                img.onload = doPrint;
-            }
+            setTimeout(() => {
+                window.print();
+            }, 300);
         }
 
-        const opt = {
-            margin: 0,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
-        };
-
-        function guardarPDFIndividual() {
+        // =================================================================
+        //  GUARDAR PDF INDIVIDUAL
+        // =================================================================
+        async function guardarPDFIndividual() {
             limpiarUI();
-            const el = document.getElementById('certificado-nodo');
-            const nombre = document.getElementById('nombre-receptor').innerText.trim();
-            html2pdf().set({ ...opt, filename: 'Diploma_' + (nombre || 'Individual') + '.pdf' }).from(el).save();
+            try {
+                const nombre = document.getElementById('nombre-receptor').innerText.trim();
+                const canvas = await capturarDiploma(3);
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' });
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 11, 8.5);
+                pdf.save('Diploma_' + (nombre || 'Individual') + '.pdf');
+            } catch (err) {
+                console.error('Error al generar PDF:', err);
+                if (err.message.includes('Tainted canvases')) {
+                    alert('⚠️ Por seguridad, Chrome no permite exportar a PDF imágenes cargadas directamente. \n\nSOLUCIÓN: Usa el botón "Cargar imagen propia" y selecciona tu plantilla desde ahí. Luego intenta de nuevo.');
+                } else {
+                    alert('Error al generar PDF: ' + err.message);
+                }
+            }
         }
 
-        // ============================================================
-        //  GENERACIÓN MASIVA — jsPDF + html2canvas (robusto)
-        // ============================================================
+        // =================================================================
+        //  GENERACION MASIVA — un PDF con todos los diplomas
+        // =================================================================
         async function generarPDFMasivo() {
             limpiarUI();
-
             const nombresRaw = document.getElementById('lista-nombres').value;
             const nombres = nombresRaw.split('\n').map(n => n.trim()).filter(n => n !== '');
             if (!nombres.length) { alert('Ingresa al menos un nombre en la lista.'); return; }
@@ -1085,18 +1122,15 @@
             const nd = document.getElementById('nombre-receptor');
             const btn = document.querySelector('[onclick="generarPDFMasivo()"]');
             const orig = nd.innerHTML;
-            const prevTransform = el.style.transform;
+            const prevT = el.style.transform;
 
-            // Mostrar progreso
             const progBox = document.getElementById('prog-box');
             const progBar = document.getElementById('prog-bar');
             const progTxt = document.getElementById('prog-txt');
             progBox.style.display = 'flex';
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
+            btn.disabled = true; btn.style.opacity = '0.5';
 
             try {
-                // Quitar escala CSS para que html2canvas capture tamaño real
                 el.style.transform = 'scale(1)';
                 el.style.transformOrigin = 'top left';
 
@@ -1105,130 +1139,127 @@
 
                 for (let i = 0; i < nombres.length; i++) {
                     nd.innerText = nombres[i];
-                    progTxt.textContent = `Generando ${i + 1} de ${nombres.length}: ${nombres[i]}`;
+                    progTxt.textContent = `Generando ${i + 1} / ${nombres.length}: ${nombres[i]}`;
                     progBar.style.width = ((i / nombres.length) * 100) + '%';
-
-                    // Esperar render del DOM
-                    await new Promise(r => setTimeout(r, 350));
+                    await new Promise(r => setTimeout(r, 300));
 
                     const canvas = await html2canvas(el, {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: false,
-                        logging: false,
-                        backgroundColor: '#ffffff'
+                        scale: 2, useCORS: true, allowTaint: true,
+                        logging: false, backgroundColor: '#ffffff'
                     });
-
-                    const imgData = canvas.toDataURL('image/jpeg', 0.97);
                     if (i > 0) pdf.addPage('letter', 'landscape');
-                    // Carta horizontal: 11 × 8.5 pulgadas
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 11, 8.5);
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 11, 8.5);
                 }
 
                 progBar.style.width = '100%';
                 progTxt.textContent = 'Guardando PDF...';
                 await new Promise(r => setTimeout(r, 200));
-
                 pdf.save('Diplomas_Masivos.pdf');
-
-                progTxt.textContent = `¡${nombres.length} diploma(s) generados exitosamente!`;
+                progTxt.textContent = `¡${nombres.length} diploma(s) generados!`;
                 progBar.style.background = '#10b981';
                 await new Promise(r => setTimeout(r, 2000));
 
             } catch (err) {
-                console.error('Error generación masiva:', err);
-                alert('Error al generar: ' + err.message);
+                console.error(err);
+                if (err.message && err.message.includes('Tainted canvases')) {
+                    alert('⚠️ Por seguridad, Chrome bloquea esta acción en archivos locales.\n\nSOLUCIÓN: Usa el botón "Cargar imagen propia" para cargar la plantilla, luego intenta de nuevo.');
+                } else {
+                    alert('Error: ' + err.message);
+                }
             } finally {
                 nd.innerHTML = orig;
-                el.style.transform = prevTransform;
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                el.style.transform = prevT;
+                btn.disabled = false; btn.style.opacity = '1';
                 progBox.style.display = 'none';
                 progBar.style.width = '0%';
-                progBar.style.background = '#10b981';
+                progBar.style.background = 'linear-gradient(90deg,#059669,#10b981)';
                 scaleDiploma();
             }
         }
 
-        // ============================================================
-        //  IMPRIMIR TODO (una página por nombre, sin PDF)
-        // ============================================================
+        // =================================================================
+        //  IMPRIMIR TODO (una pagina por nombre)
+        // =================================================================
         async function imprimirTodo() {
             limpiarUI();
             const nombresRaw = document.getElementById('lista-nombres').value;
             const nombres = nombresRaw.split('\n').map(n => n.trim()).filter(n => n !== '');
             if (!nombres.length) { alert('Ingresa al menos un nombre en la lista.'); return; }
 
+            const el = document.getElementById('certificado-nodo');
             const nd = document.getElementById('nombre-receptor');
             const orig = nd.innerHTML;
+            const prevT = el.style.transform;
 
-            // Inyectar estilos de impresión multipágina temporales
-            const styleTag = document.createElement('style');
-            styleTag.id = 'print-override';
-            styleTag.textContent = `
-        @media print {
-            .print-page { page-break-after: always; }
+            el.style.transform = 'scale(1)';
+            el.style.transformOrigin = 'top left';
+
+            const paginasHtml = [];
+            for (let i = 0; i < nombres.length; i++) {
+                nd.innerText = nombres[i];
+                await new Promise(r => setTimeout(r, 300));
+                const canvas = await html2canvas(el, {
+                    scale: 2, useCORS: true, allowTaint: true,
+                    logging: false, backgroundColor: '#ffffff'
+                });
+                paginasHtml.push(`<img src="${canvas.toDataURL('image/jpeg', 0.95)}">`);
+            }
+
+            nd.innerHTML = orig;
+            el.style.transform = prevT;
+            scaleDiploma();
+
+            const estilos = `
+@page{size:279.4mm 215.9mm;margin:0}
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow:hidden}
+body{background:white;overflow:hidden}
+img{
+  position:fixed;
+  top:-8mm;left:-8mm;
+  width:calc(279.4mm + 16mm);
+  height:calc(215.9mm + 16mm);
+  display:block;
+  page-break-after:always;
+}`;
+
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>${estilos}</style></head><body>
+${paginasHtml.join('\n')}
+<script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close()},1200)},400)}<\/script>
+</body></html>`;
+
+            const pw = window.open('', '_blank', 'width=1200,height=900');
+            if (!pw) { alert('Permite ventanas emergentes para este sitio.'); return; }
+            pw.document.open();
+            pw.document.write(html);
+            pw.document.close();
         }
-    `;
-            document.head.appendChild(styleTag);
 
-            // Crear contenedor de impresión oculto con una copia del diploma por nombre
-            const printContainer = document.createElement('div');
-            printContainer.id = 'print-all-container';
-            printContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:1056px;';
-
-            const baseHTML = document.getElementById('certificado-nodo').outerHTML;
-
-            nombres.forEach((nombre, i) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'print-page';
-                wrapper.style.cssText = 'width:1056px;height:816px;position:relative;overflow:hidden;';
-                wrapper.innerHTML = baseHTML;
-                wrapper.querySelector('#certificado-nodo').removeAttribute('id');
-                const nr = wrapper.querySelector('#nombre-receptor');
-                if (nr) { nr.innerText = nombre; nr.removeAttribute('id'); }
-                // Quitar estilos de escala
-                const dip = wrapper.querySelector('.certificate-wrapper');
-                if (dip) dip.style.transform = 'scale(1)';
-                printContainer.appendChild(wrapper);
-            });
-
-            document.body.appendChild(printContainer);
-
-            // Activar modo impresión masiva (el CSS @media print lo maneja)
-            document.body.classList.add('printing-all');
-
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => {
-                    document.body.removeChild(printContainer);
-                    document.head.removeChild(styleTag);
-                    document.body.classList.remove('printing-all');
-                    nd.innerHTML = orig;
-                }, 1200);
-            }, 500);
+        function limpiarUI() {
+            document.querySelectorAll('.draggable-box').forEach(b => b.classList.remove('selected'));
+            toolbar.classList.remove('active');
+            if (document.activeElement) document.activeElement.blur();
         }
 
-        // ============================================================
-        //  ESCALA AUTOMÁTICA DEL DIPLOMA AL ANCHO DE PANTALLA
-        //  El wrapper se adapta al alto natural de la imagen.
-        //  El PDF se genera sin escala, respetando las proporciones.
-        // ============================================================
-        const CARTA_W = 1056;
-
+        // =================================================================
+        //  AJUSTE AUTOMÁTICO DE PANTALLA (escalado visual)
+        // =================================================================
         function scaleDiploma() {
+            const container = document.getElementById('certificado-container');
             const outer = document.querySelector('.certificate-outer');
-            const wrapper = document.getElementById('certificado-nodo');
-            if (!outer || !wrapper) return;
+            if (!container || !outer) return;
 
-            // Ancho disponible con un poco de margen
-            const available = outer.clientWidth - 32;
-            const scale = Math.min(1, available / CARTA_W);
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            const ww = 1056;
+            const wh = 816;
 
-            wrapper.style.transform = `scale(${scale})`;
-            // Usar el alto REAL del wrapper (determinado por la imagen)
-            const actualH = wrapper.offsetHeight;
-            outer.style.height = (actualH * scale) + 'px';
+            const scaleX = cw / ww;
+            const scaleY = ch / wh;
+            const scale = Math.min(scaleX, scaleY, 1) * 0.95;
+
+            outer.style.transform = `scale(${scale})`;
         }
 
         // Escalar al cargar y al cambiar tamaño de ventana
